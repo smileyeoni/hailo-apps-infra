@@ -264,6 +264,49 @@ def DISPLAY_PIPELINE(video_sink='autovideosink', sync='true', show_fps='false', 
 
     return display_pipeline
 
+def DISPLAY_PIPELINE2(video_sink='autovideosink', sync='false', show_fps='false', name='hailo_display'):
+    """
+    Builds the GStreamer pipeline string that:
+    - draws bounding boxes and labels using hailooverlay,
+    - optionally displays the FPS via fpsdisplaysink,
+    - and renders the output with autovideosink.
+
+    Args:
+        video_sink (str): The sink element to use. Default is 'autovideosink'.
+        sync (str): Sink synchronization mode, 'true' or 'false'. Default is 'false'.
+        show_fps (str): Whether to overlay the FPS, 'true' or 'false'. Default is 'false'.
+        name (str): Prefix for pipeline element names. Default is 'hailo_display'.
+
+    Returns:
+        str: The complete GStreamer pipeline string.
+    """
+    display_pipeline = (
+        f'{OVERLAY_PIPELINE(name=f"{name}_overlay")} ! '
+        # Insert queues before and after videoconvert, dropping when downstream is full
+        f'{QUEUE(name=f"{name}_videoconvert_q", leaky="downstream")} ! '
+        f'videoconvert name={name}_videoconvert n-threads=2 qos=false ! '
+        f'{QUEUE(name=f"{name}_q", leaky="downstream")} ! '
+        f'fpsdisplaysink name={name} '
+        f'video-sink={video_sink} sync={sync} '
+        f'text-overlay={show_fps} signal-fps-measurements=true'
+    )
+    return display_pipeline
+
+# Create File Output Pipeline
+def FILE_OUTPUT_PIPELINE(output_path: str, name='hailo_output'):
+    """
+    Renders the overlay & encodes it to H.264 MP4.
+    """
+    pipeline = (
+        f'{OVERLAY_PIPELINE(name=f"{name}_overlay")} ! '
+        f'{QUEUE(name=f"{name}_enc_q", leaky="downstream")} ! '
+        f'videoconvert ! video/x-raw,format=I420 ! '\
+        f'x264enc speed-preset=superfast option-string="crf=23" ! '\
+        f'h264parse ! video/x-h264,profile=high ! ' \
+        f'mp4mux ! filesink location="{output_path}" sync=false'
+    )
+    return pipeline
+
 def FILE_SINK_PIPELINE(output_file='output.mkv', name='file_sink', bitrate=5000):
     """
     Creates a GStreamer pipeline string for saving the video to a file in .mkv format.

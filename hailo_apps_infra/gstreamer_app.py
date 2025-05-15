@@ -111,6 +111,13 @@ class GStreamerApp:
         self.hef_path = None
         self.app_callback = None
 
+        # Kenny parameter
+        self.file_output = False
+        if self.file_output:
+            print("Mode: File Save")
+        else:
+            print("Mode: Streaming")
+
         # Set user data parameters
         user_data.use_frame = self.options_menu.use_frame
 
@@ -146,8 +153,20 @@ class GStreamerApp:
     def bus_call(self, bus, message, loop):
         t = message.type
         if t == Gst.MessageType.EOS:
-            print("End-of-stream")
-            self.on_eos()
+            #print("End-of-stream")
+            #self.on_eos()
+
+            import sys
+
+            print("End-of-stream — stopping loop and exiting")
+            # 1) stop the GLib loop
+            loop.quit()
+            # 2) remove the bus watch so no callbacks keep us alive
+            bus.remove_signal_watch()
+            # 3) tear down pipeline
+            self.pipeline.set_state(Gst.State.NULL)
+            # 4) exit the entire process
+            sys.exit(0)
         elif t == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             print(f"Error: {err}, {debug}", file=sys.stderr)
@@ -244,6 +263,21 @@ class GStreamerApp:
 
         # Run the GLib event loop
         self.loop.run()
+
+        # ================= Adding EOS to save file =================
+        # 1) Send an EOS event to notify mp4mux of the end of the stream
+        self.pipeline.send_event(Gst.Event.new_eos())
+        # 2) wait for EOS or ERROR message
+        eos_bus = self.pipeline.get_bus()
+        msg = eos_bus.timed_pop_filtered(
+            Gst.CLOCK_TIME_NONE,
+            Gst.MessageType.EOS | Gst.MessageType.ERROR
+        )
+        if msg.type == Gst.MessageType.ERROR:
+            err, dbg = msg.parse_error()
+            print(f"[ERROR] {err}", dbg)
+        else:
+            print("[INFO] EOS received — muxer finalized file.")
 
         # Clean up
         try:

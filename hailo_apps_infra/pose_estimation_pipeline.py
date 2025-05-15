@@ -1,6 +1,7 @@
 import gi
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib
+gi.require_version('GstPbutils', '1.0')
+from gi.repository import Gst, GLib, GstPbutils
 import os
 import argparse
 import multiprocessing
@@ -21,6 +22,7 @@ from hailo_apps_infra.gstreamer_helper_pipelines import(
     TRACKER_PIPELINE,
     USER_CALLBACK_PIPELINE,
     DISPLAY_PIPELINE,
+    FILE_OUTPUT_PIPELINE,
 )
 from hailo_apps_infra.gstreamer_app import (
     GStreamerApp,
@@ -36,15 +38,42 @@ from hailo_apps_infra.gstreamer_app import (
 
 class GStreamerPoseEstimationApp(GStreamerApp):
     def __init__(self, app_callback, user_data, parser=None):
+        Gst.init(None)
         if parser == None:
             parser = get_default_parser()
         # Call the parent class constructor
         super().__init__(parser, user_data)
+
+        # Read Video's resolution using Discoverer
+        input_path = self.options_menu.input
+        if input_path and os.path.isfile(input_path):
+            # Create Discoverer (Timeout 5 seconds)
+            discoverer = GstPbutils.Discoverer.new(5 * Gst.SECOND)
+            # Filename to URI
+            uri = Gst.filename_to_uri(os.path.abspath(input_path))
+            info = discoverer.discover_uri(uri)
+            # Reading Video stream infomation and peak resolution
+            for s in info.get_video_streams():
+                if isinstance(s, GstPbutils.DiscovererVideoInfo):
+                    struct = s.get_caps().get_structure(0)
+                    w = struct.get_int("width")[1]
+                    h = struct.get_int("height")[1]
+                    self.video_width = w
+                    self.video_height = h
+                    break
+        else:
+            # fallback: default values
+            self.video_width = 1280
+            self.video_height = 720
+
+        #self.batch_size = 2
+        self.batch_size = 1
+        print(f"Using video resolution: {self.video_width}×{self.video_height}")
+
         # Additional initialization code can be added here
         # Set Hailo parameters these parameters should be set based on the model used
-        self.batch_size = 2
-        self.video_width = 1280
-        self.video_height = 720
+        #self.video_width = 1280
+        #self.video_height = 720
 
 
         # Determine the architecture if not specified
@@ -75,7 +104,8 @@ class GStreamerPoseEstimationApp(GStreamerApp):
 
 
         # Set the process title
-        setproctitle.setproctitle("Hailo Pose Estimation App")
+        #setproctitle.setproctitle("Hailo Pose Estimation App")
+        setproctitle.setproctitle("BrightMinds Pose Estimation Test")
 
         self.create_pipeline()
 
@@ -91,14 +121,25 @@ class GStreamerPoseEstimationApp(GStreamerApp):
         tracker_pipeline = TRACKER_PIPELINE(class_id=0)
         user_callback_pipeline = USER_CALLBACK_PIPELINE()
 
-        display_pipeline = DISPLAY_PIPELINE(video_sink=self.video_sink, sync=self.sync, show_fps=self.show_fps)
         pipeline_string = (
             f'{source_pipeline} !'
             f'{infer_pipeline_wrapper} ! '
             f'{tracker_pipeline} ! '
             f'{user_callback_pipeline} ! '
-            f'{display_pipeline}'
         )
+
+        # Changed to save file
+        if self.file_output:
+            output_pipeline = FILE_OUTPUT_PIPELINE("results.mp4")
+            pipeline_string += (
+                f'{output_pipeline}'
+            )
+        else:
+            display_pipeline = DISPLAY_PIPELINE(video_sink=self.video_sink, sync=self.sync, show_fps=self.show_fps)
+            pipeline_string += (
+                f'{display_pipeline}'
+            )
+
         print(pipeline_string)
         return pipeline_string
 
