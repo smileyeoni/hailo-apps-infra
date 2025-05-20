@@ -77,9 +77,6 @@ class GStreamerApp:
         # Create options menu
         self.options_menu = args.parse_args()
 
-        # Apply file-output option
-        self.file_output = self.options_menu.file_output
-
         # Read Video's resolution using Discoverer if file input is provided
         input_path = self.options_menu.input
         if input_path and os.path.isfile(input_path):
@@ -139,8 +136,9 @@ class GStreamerApp:
         self.hef_path = None
         self.app_callback = None
 
-        # Kenny parameter
-        self.file_output = False
+        # Apply file-output option
+        self.file_output = self.options_menu.file_output
+
         if self.file_output:
             print("Mode: File Save")
         else:
