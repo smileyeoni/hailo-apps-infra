@@ -69,10 +69,35 @@ def dummy_callback(pad, info, user_data):
 class GStreamerApp:
     def __init__(self, args, user_data: app_callback_class):
         # Set the process title
-        setproctitle.setproctitle("Hailo Python App")
+        setproctitle.setproctitle("BrightMinds Python App")
 
         # Create options menu
         self.options_menu = args.parse_args()
+
+        # Apply file-output option
+        self.file_output = self.options_menu.file_output
+
+        # Read Video's resolution using Discoverer if file input is provided
+        input_path = self.options_menu.input
+        if input_path and os.path.isfile(input_path):
+            # Create Discoverer (Timeout 5 seconds)
+            discoverer = GstPbutils.Discoverer.new(5 * Gst.SECOND)
+            # Filename to URI
+            uri = Gst.filename_to_uri(os.path.abspath(input_path))
+            info = discoverer.discover_uri(uri)
+            # Reading Video stream infomation and peak resolution
+            for s in info.get_video_streams():
+                if isinstance(s, GstPbutils.DiscovererVideoInfo):
+                    struct = s.get_caps().get_structure(0)
+                    self.video_width = struct.get_int("width")[1]
+                    self.video_height = struct.get_int("height")[1]
+                    break
+        else:
+            # fallback: default values
+            self.video_width = 1280
+            self.video_height = 720
+
+        print(f"Using video resolution: {self.video_width}×{self.video_height}")
 
         # Set up signal handler for SIGINT (Ctrl-C)
         signal.signal(signal.SIGINT, self.shutdown)
@@ -105,8 +130,8 @@ class GStreamerApp:
 
         # Set Hailo parameters; these parameters should be set based on the model used
         self.batch_size = 1
-        self.video_width = 1280
-        self.video_height = 720
+        #self.video_width = 1280
+        #self.video_height = 720
         self.video_format = "RGB"
         self.hef_path = None
         self.app_callback = None

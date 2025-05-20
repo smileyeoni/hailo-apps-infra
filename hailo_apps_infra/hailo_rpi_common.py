@@ -65,7 +65,11 @@ def get_caps_from_pad(pad: Gst.Pad):
 
 
 def get_default_parser():
-    parser = argparse.ArgumentParser(description="Hailo App Help")
+    parser = argparse.ArgumentParser(description="BrightMinds App Help")
+    parser.add_argument(
+        "--file-output", "-o", action="store_true",
+        help="Enable file output instead of display"
+    )
     parser.add_argument(
         "--input", "-i", type=str, default=None,
         help="Input source. Can be a file, USB (webcam), RPi camera (CSI camera module) or ximage. \
