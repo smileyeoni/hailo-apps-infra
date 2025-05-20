@@ -21,6 +21,7 @@ from hailo_apps_infra.gstreamer_helper_pipelines import(
     TRACKER_PIPELINE,
     USER_CALLBACK_PIPELINE,
     DISPLAY_PIPELINE,
+    FILE_OUTPUT_PIPELINE,
 )
 from hailo_apps_infra.gstreamer_app import (
     GStreamerApp,

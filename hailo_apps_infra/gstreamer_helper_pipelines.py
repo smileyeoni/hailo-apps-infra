@@ -239,7 +239,7 @@ def OVERLAY_PIPELINE(name='hailo_overlay'):
 
     return overlay_pipeline
 
-def DISPLAY_PIPELINE(video_sink='autovideosink', sync='true', show_fps='false', name='hailo_display'):
+def DISPLAY_PIPELINE(video_sink='autovideosink', sync='false', show_fps='false', name='hailo_display'):
     """
     Creates a GStreamer pipeline string for displaying the video.
     It includes the hailooverlay plugin to draw bounding boxes and labels on the video.
@@ -262,34 +262,6 @@ def DISPLAY_PIPELINE(video_sink='autovideosink', sync='true', show_fps='false', 
         f'fpsdisplaysink name={name} video-sink={video_sink} sync={sync} text-overlay={show_fps} signal-fps-measurements=true '
     )
 
-    return display_pipeline
-
-def DISPLAY_PIPELINE2(video_sink='autovideosink', sync='false', show_fps='false', name='hailo_display'):
-    """
-    Builds the GStreamer pipeline string that:
-    - draws bounding boxes and labels using hailooverlay,
-    - optionally displays the FPS via fpsdisplaysink,
-    - and renders the output with autovideosink.
-
-    Args:
-        video_sink (str): The sink element to use. Default is 'autovideosink'.
-        sync (str): Sink synchronization mode, 'true' or 'false'. Default is 'false'.
-        show_fps (str): Whether to overlay the FPS, 'true' or 'false'. Default is 'false'.
-        name (str): Prefix for pipeline element names. Default is 'hailo_display'.
-
-    Returns:
-        str: The complete GStreamer pipeline string.
-    """
-    display_pipeline = (
-        f'{OVERLAY_PIPELINE(name=f"{name}_overlay")} ! '
-        # Insert queues before and after videoconvert, dropping when downstream is full
-        f'{QUEUE(name=f"{name}_videoconvert_q", leaky="downstream")} ! '
-        f'videoconvert name={name}_videoconvert n-threads=2 qos=false ! '
-        f'{QUEUE(name=f"{name}_q", leaky="downstream")} ! '
-        f'fpsdisplaysink name={name} '
-        f'video-sink={video_sink} sync={sync} '
-        f'text-overlay={show_fps} signal-fps-measurements=true'
-    )
     return display_pipeline
 
 # Create File Output Pipeline

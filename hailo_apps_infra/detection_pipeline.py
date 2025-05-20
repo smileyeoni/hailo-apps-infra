@@ -21,6 +21,7 @@ from hailo_apps_infra.gstreamer_helper_pipelines import(
     TRACKER_PIPELINE,
     USER_CALLBACK_PIPELINE,
     DISPLAY_PIPELINE,
+    FILE_OUTPUT_PIPELINE,
 )
 from hailo_apps_infra.gstreamer_app import (
     GStreamerApp,
@@ -87,7 +88,7 @@ class GStreamerDetectionApp(GStreamerApp):
         )
 
         # Set the process title
-        setproctitle.setproctitle("Hailo Detection App")
+        setproctitle.setproctitle("BrightMindes Detection")
 
         self.create_pipeline()
 
@@ -110,8 +111,19 @@ class GStreamerDetectionApp(GStreamerApp):
             f'{detection_pipeline_wrapper} ! '
             f'{tracker_pipeline} ! '
             f'{user_callback_pipeline} ! '
-            f'{display_pipeline}'
         )
+
+        if self.file_output:
+            output_pipeline = FILE_OUTPUT_PIPELINE("results.mp4")
+            pipeline_string += (
+                f'{output_pipeline}'
+            )
+        else:
+            display_pipeline = DISPLAY_PIPELINE(video_sink=self.video_sink, sync=self.sync, show_fps=self.show_fps)
+            pipeline_string += (
+                f'{display_pipeline}'
+            )
+
         print(pipeline_string)
         return pipeline_string
 

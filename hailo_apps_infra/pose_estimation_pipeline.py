@@ -104,7 +104,7 @@ class GStreamerPoseEstimationApp(GStreamerApp):
 
 
         # Set the process title
-        #setproctitle.setproctitle("Hailo Pose Estimation App")
+        # setproctitle.setproctitle("Hailo Pose Estimation App")
         setproctitle.setproctitle("BrightMinds Pose Estimation Test")
 
         self.create_pipeline()

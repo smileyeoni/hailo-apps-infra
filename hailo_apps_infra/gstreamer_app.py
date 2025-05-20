@@ -156,8 +156,6 @@ class GStreamerApp:
             #print("End-of-stream")
             #self.on_eos()
 
-            import sys
-
             print("End-of-stream — stopping loop and exiting")
             # 1) stop the GLib loop
             loop.quit()
@@ -279,6 +277,7 @@ class GStreamerApp:
         else:
             print("[INFO] EOS received — muxer finalized file.")
 
+
         # Clean up
         try:
             self.user_data.running = False
@@ -297,6 +296,8 @@ class GStreamerApp:
             else:
                 print("Exiting...")
                 sys.exit(0)
+
+        bus.remove_signal_watch()
 
 def picamera_thread(pipeline, video_width, video_height, video_format, picamera_config=None):
     appsrc = pipeline.get_by_name("app_source")
