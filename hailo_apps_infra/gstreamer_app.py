@@ -9,9 +9,12 @@ import cv2
 import numpy as np
 import time
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib, GObject
+gi.require_version('GstPbutils', '1.0')
+from gi.repository import Gst, GLib, GObject, GstPbutils
 from hailo_apps_infra.gstreamer_helper_pipelines import get_source_type
 from hailo_apps_infra.get_usb_camera import get_usb_video_devices
+
+Gst.init(None)
 
 try:
     from picamera2 import Picamera2

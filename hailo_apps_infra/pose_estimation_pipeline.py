@@ -38,7 +38,6 @@ from hailo_apps_infra.gstreamer_app import (
 
 class GStreamerPoseEstimationApp(GStreamerApp):
     def __init__(self, app_callback, user_data, parser=None):
-        Gst.init(None)
         if parser == None:
             parser = get_default_parser()
         # Call the parent class constructor
